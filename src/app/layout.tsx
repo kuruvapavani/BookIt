@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`min-h-screen ${inter.className}`}>
-        <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+        <main>{children}</main>
       </body>
     </html>
   );

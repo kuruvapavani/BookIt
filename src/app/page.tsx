@@ -1,6 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import ExperienceCard from "@/components/ExperienceCard";
+import Navbar from "@/components/Navbar";
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+
   const experiences = [
     {
       _id: "1",
@@ -104,12 +110,28 @@ export default function Home() {
     },
   ];
 
+  const filtered = experiences.filter(
+    (exp) =>
+      exp.title.toLowerCase().includes(query.toLowerCase()) ||
+      exp.location.toLowerCase().includes(query.toLowerCase())
+  );
+
   return (
-    <main className="min-h-screen px-6 py-10">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-12 gap-x-8 justify-center place-items-center">
-        {experiences.map((exp) => (
-          <ExperienceCard key={exp._id} {...exp} />
-        ))}
+    <main className="min-h-screen bg-white">
+      <Navbar onSearch={(val) => setQuery(val)} />
+
+      <div className="px-6 py-10 max-w-7xl mx-auto">
+        {filtered.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-12 gap-x-8 justify-center place-items-center">
+            {filtered.map((exp) => (
+              <ExperienceCard key={exp._id} {...exp} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-500 text-lg">
+            No experiences found.
+          </p>
+        )}
       </div>
     </main>
   );
