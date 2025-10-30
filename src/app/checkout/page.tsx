@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import { toast } from "sonner";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -40,9 +41,12 @@ export default function CheckoutPage() {
 
   // Apply promo
   const handleApplyPromo = async () => {
-    if (!promo.trim()) return;
+    if (!promo.trim()) {
+      toast.warning("Please enter a promo code");
+      return;
+    }
+
     setLoading(true);
-    setPromoMessage("");
 
     try {
       const res = await fetch("/api/promo", {
@@ -56,75 +60,76 @@ export default function CheckoutPage() {
       if (data.valid) {
         setDiscount(data.discountValue);
         setDiscountType(data.discountType);
-        setPromoMessage(`✅ ${data.message}`);
+        toast.success(`Promo applied successfully`);
       } else {
         setDiscount(0);
         setDiscountType(null);
-        setPromoMessage(`❌ ${data.message}`);
+        toast.error(data.message || "Invalid promo code");
       }
     } catch {
-      setPromoMessage("❌ Server error. Try again later.");
+      toast.error("Server error. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleBooking = async () => {
-  if (!fullName || !email) {
-    alert("Please fill in your name and email.");
-    return;
-  }
-
-  if (!agreed) {
-    alert("Please agree to the terms before proceeding.");
-    return;
-  }
-
-  if (!experienceId) {
-    alert("Experience ID missing. Please try again.");
-    return;
-  }
-
-  setIsBooking(true);
-
-  try {
-    const subtotal = price * qty;
-    const total = (() => {
-      if (discountType === "percentage") {
-        return subtotal - (subtotal * discount) / 100 + tax;
-      } else if (discountType === "flat") {
-        return subtotal - discount + tax;
-      }
-      return subtotal + tax;
-    })();
-
-    const res = await fetch("/api/bookings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        experienceId,
-        user: { name: fullName, email },
-        slot: { date, time },
-        quantity: qty,
-        price,
-        total,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.success) {
-      router.push(`/success?id=${data.booking._id}`);
-    } else {
-      alert(data.error || "Booking failed. Try again.");
+    if (!fullName || !email) {
+      toast.warning("Please fill in your name and email");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert("Something went wrong while confirming booking.");
-  } finally {
-    setIsBooking(false);
-  }
-};
+
+    if (!agreed) {
+      toast.warning("You must agree to the terms before proceeding");
+      return;
+    }
+
+    if (!experienceId) {
+      toast.error("Experience ID missing. Please try again");
+      return;
+    }
+
+    setIsBooking(true);
+
+    try {
+      const subtotal = price * qty;
+      const total = (() => {
+        if (discountType === "percentage") {
+          return subtotal - (subtotal * discount) / 100 + tax;
+        } else if (discountType === "flat") {
+          return subtotal - discount + tax;
+        }
+        return subtotal + tax;
+      })();
+
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          experienceId,
+          user: { name: fullName, email },
+          slot: { date, time },
+          quantity: qty,
+          price,
+          total,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success("Booking confirmed successfully!");
+        router.push(`/success?id=${data.booking._id}`);
+      } else {
+        toast.error(data.error || "Booking failed. Try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong while confirming booking.");
+    } finally {
+      setIsBooking(false);
+    }
+  };
 
 
 

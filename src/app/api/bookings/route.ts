@@ -7,7 +7,6 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const body = await req.json();
-    console.log("🟢 Request Body:", body);
 
     const { experienceId, user, slot, quantity, price, total } = body;
 
