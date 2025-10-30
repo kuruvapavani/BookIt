@@ -4,11 +4,28 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
+interface Slot {
+  date: string;
+  time: string;
+  left: number;
+  available: boolean;
+}
+
+interface Experience {
+  _id: string;
+  title: string;
+  location: string;
+  description: string;
+  image: string;
+  price: number;
+  slots: Slot[];
+}
+
 export default function ExperienceDetails() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [experience, setExperience] = useState<any>(null);
+  const [experience, setExperience] = useState<Experience | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -16,7 +33,9 @@ export default function ExperienceDetails() {
 
   const tax = 59;
   const isConfirmEnabled = selectedDate && selectedTime;
+  const total = experience ? experience.price * quantity + tax : 0;
 
+  // 🔹 Fetch experience details
   useEffect(() => {
     if (!id) return;
     const fetchExperience = async () => {
@@ -48,14 +67,20 @@ export default function ExperienceDetails() {
       </main>
     );
 
-  const total = experience.price * quantity + tax;
+  // 🔹 Unique available dates
+  const uniqueDates = [...new Set(experience.slots.map((s) => s.date))];
+
+  // 🔹 Filter times based on selected date
+  const availableTimes = selectedDate
+    ? experience.slots.filter((s) => s.date === selectedDate)
+    : [];
 
   return (
     <>
       <Navbar onSearch={(val) => console.log(val)} />
 
-      <main className="min-h-screen bg-white px-4 sm:px-6 py-8 md:py-10 md:max-w-6xl mx-auto">
-        {/* Back button */}
+      <main className="min-h-screen bg-white px-4 sm:px-6 py-8 md:py-10 md:max-w-6xl mx-auto space-y-8">
+        {/* 🔙 Back button */}
         <button
           onClick={() => router.back()}
           className="text-sm text-gray-700 flex items-center gap-1 mb-5 hover:underline"
@@ -63,92 +88,87 @@ export default function ExperienceDetails() {
           <span>←</span> Details
         </button>
 
-        {/* Main grid */}
         <div className="grid md:grid-cols-[1.5fr_0.9fr] gap-8 md:gap-10">
-          {/* Left Section */}
+          {/* 🌅 Left Section */}
           <section>
-            {/* Image */}
-            <div className="w-full h-[250px] sm:h-[300px] md:h-[400px] rounded-xl overflow-hidden mb-5">
+            <div className="w-full h-[250px] sm:h-[320px] md:h-[400px] rounded-xl overflow-hidden mb-5">
               <img
-                src={experience.image}
+                src={experience.image || "/fallback.jpg"}
                 alt={experience.title}
                 className="w-full h-full object-cover"
               />
             </div>
 
-            {/* Title & Description */}
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-1">
               {experience.title}
             </h1>
-            <p className="text-sm text-gray-500 mb-3">{experience.place}</p>
+            <p className="text-sm text-gray-500 mb-3">{experience.location}</p>
             <p className="text-[15px] text-gray-600 leading-relaxed mb-8">
               {experience.description}
             </p>
 
-            {/* Choose Date */}
+            {/* 📅 Choose Date */}
             <div className="mb-6">
               <p className="font-medium text-gray-900 mb-2">Choose date</p>
               <div className="flex flex-wrap gap-2">
-                {["Oct 22", "Oct 23", "Oct 24", "Oct 25", "Oct 26"].map(
-                  (date) => (
-                    <button
-                      key={date}
-                      onClick={() => setSelectedDate(date)}
-                      className={`px-3 py-[6px] border rounded-md text-sm font-medium transition-all ${
-                        selectedDate === date
-                          ? "bg-[#FFD84D] border-[#FFD84D] text-gray-900"
-                          : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {date}
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Choose Time */}
-            <div className="mb-6">
-              <p className="font-medium text-gray-900 mb-2">Choose time</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { time: "07:00 am", left: "4 left" },
-                  { time: "09:00 am", left: "2 left" },
-                  { time: "11:00 am", left: "1 left" },
-                  { time: "01:00 pm", sold: true },
-                ].map((slot) => (
+                {uniqueDates.map((date) => (
                   <button
-                    key={slot.time}
-                    disabled={slot.sold}
-                    onClick={() => setSelectedTime(slot.time)}
-                    className={`px-3 py-[6px] border rounded-md text-sm font-medium flex items-center gap-2 transition-all ${
-                      slot.sold
-                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                        : selectedTime === slot.time
+                    key={date}
+                    onClick={() => {
+                      setSelectedDate(date);
+                      setSelectedTime(null);
+                    }}
+                    className={`px-3 py-[6px] border rounded-md text-sm font-medium transition-all ${
+                      selectedDate === date
                         ? "bg-[#FFD84D] border-[#FFD84D] text-gray-900"
                         : "border-gray-300 text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    <span>{slot.time}</span>
-                    {!slot.sold && slot.left && (
-                      <span className="text-[11px] text-red-500 font-medium">
-                        {slot.left}
-                      </span>
-                    )}
-                    {slot.sold && (
-                      <span className="text-[11px] text-gray-500 font-medium">
-                        Sold out
-                      </span>
-                    )}
+                    {date}
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                All times are in IST (GMT +5:30)
-              </p>
             </div>
 
-            {/* About */}
+            {/* ⏰ Choose Time */}
+            {selectedDate && (
+              <div className="mb-6">
+                <p className="font-medium text-gray-900 mb-2">Choose time</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableTimes.map((slot) => (
+                    <button
+                      key={`${slot.date}-${slot.time}`}
+                      disabled={!slot.available || slot.left <= 0}
+                      onClick={() => setSelectedTime(slot.time)}
+                      className={`px-3 py-[6px] border rounded-md text-sm font-medium flex items-center gap-2 transition-all ${
+                        !slot.available || slot.left <= 0
+                          ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                          : selectedTime === slot.time
+                          ? "bg-[#FFD84D] border-[#FFD84D] text-gray-900"
+                          : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <span>{slot.time}</span>
+                      {slot.available && slot.left > 0 && (
+                        <span className="text-[11px] text-red-500 font-medium">
+                          {slot.left} left
+                        </span>
+                      )}
+                      {!slot.available && (
+                        <span className="text-[11px] text-gray-500 font-medium">
+                          Sold out
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  All times are in IST (GMT +5:30)
+                </p>
+              </div>
+            )}
+
+            {/* ℹ️ About */}
             <div>
               <p className="font-medium text-gray-900 mb-2">About</p>
               <p className="text-[14px] text-gray-600 bg-gray-100 px-3 py-2 rounded-md inline-block">
@@ -158,7 +178,7 @@ export default function ExperienceDetails() {
             </div>
           </section>
 
-          {/* Right Section (Price Summary) */}
+          {/* 💰 Right Section */}
           <aside className="w-full max-w-md md:ml-auto">
             <div className="rounded-xl p-5 bg-[#EFEFEF] shadow-sm sticky top-20 md:static">
               <div className="space-y-3">
@@ -203,6 +223,7 @@ export default function ExperienceDetails() {
                   <span>₹{total}</span>
                 </div>
 
+                {/* ✅ Confirm Button */}
                 <button
                   disabled={!isConfirmEnabled}
                   onClick={() =>

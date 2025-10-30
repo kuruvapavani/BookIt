@@ -6,7 +6,14 @@ const experienceSchema = new Schema({
   description: String,
   image: String,
   price: Number,
-  slots: [{ date: String, available: Boolean }],
+  slots: [
+    {
+      date: String,
+      time: String,
+      left: Number,
+      available: Boolean,
+    },
+  ],
 });
 
 const Experience =
