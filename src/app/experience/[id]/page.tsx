@@ -35,7 +35,6 @@ export default function ExperienceDetails() {
   const isConfirmEnabled = selectedDate && selectedTime;
   const total = experience ? experience.price * quantity + tax : 0;
 
-  // 🔹 Fetch experience details
   useEffect(() => {
     if (!id) return;
     const fetchExperience = async () => {
@@ -67,10 +66,8 @@ export default function ExperienceDetails() {
       </main>
     );
 
-  // 🔹 Unique available dates
   const uniqueDates = [...new Set(experience.slots.map((s) => s.date))];
 
-  // 🔹 Filter times based on selected date
   const availableTimes = selectedDate
     ? experience.slots.filter((s) => s.date === selectedDate)
     : [];
@@ -228,13 +225,13 @@ export default function ExperienceDetails() {
                   disabled={!isConfirmEnabled}
                   onClick={() =>
                     router.push(
-                      `/checkout?title=${encodeURIComponent(
+                      `/checkout?id=${
+                        experience._id
+                      }&title=${encodeURIComponent(
                         experience.title
-                      )}&date=${encodeURIComponent(
-                        selectedDate!
-                      )}&time=${encodeURIComponent(selectedTime!)}&price=${
+                      )}&date=${selectedDate}&time=${selectedTime}&qty=${quantity}&price=${
                         experience.price
-                      }&qty=${quantity}&tax=${tax}`
+                      }&tax=${tax}`
                     )
                   }
                   className={`mt-4 px-6 py-2.5 rounded-md font-medium transition-all duration-200 ${

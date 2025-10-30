@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
@@ -8,6 +8,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const experienceId = searchParams.get("id") || "";
   const title = searchParams.get("title") || "";
   const date = searchParams.get("date") || "";
   const time = searchParams.get("time") || "";
@@ -25,6 +26,7 @@ export default function CheckoutPage() {
   >(null);
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [isBooking, setIsBooking] = useState(false);
 
   const subtotal = price * qty;
   const total = (() => {
@@ -36,7 +38,7 @@ export default function CheckoutPage() {
     return subtotal + tax;
   })();
 
-  // Apply Promo Code
+  // Apply promo
   const handleApplyPromo = async () => {
     if (!promo.trim()) return;
     setLoading(true);
@@ -48,6 +50,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: promo }),
       });
+
       const data = await res.json();
 
       if (data.valid) {
@@ -66,9 +69,69 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleBooking = async () => {
+  if (!fullName || !email) {
+    alert("Please fill in your name and email.");
+    return;
+  }
+
+  if (!agreed) {
+    alert("Please agree to the terms before proceeding.");
+    return;
+  }
+
+  if (!experienceId) {
+    alert("Experience ID missing. Please try again.");
+    return;
+  }
+
+  setIsBooking(true);
+
+  try {
+    const subtotal = price * qty;
+    const total = (() => {
+      if (discountType === "percentage") {
+        return subtotal - (subtotal * discount) / 100 + tax;
+      } else if (discountType === "flat") {
+        return subtotal - discount + tax;
+      }
+      return subtotal + tax;
+    })();
+
+    const res = await fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        experienceId,
+        user: { name: fullName, email },
+        slot: { date, time },
+        quantity: qty,
+        price,
+        total,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      router.push(`/success?id=${data.booking._id}`);
+    } else {
+      alert(data.error || "Booking failed. Try again.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong while confirming booking.");
+  } finally {
+    setIsBooking(false);
+  }
+};
+
+
+
   return (
     <>
       <Navbar onSearch={(val) => console.log(val)} />
+
       <main className="min-h-screen bg-white px-4 sm:px-6 py-8 max-w-6xl mx-auto">
         {/* Back button */}
         <button
@@ -79,9 +142,9 @@ export default function CheckoutPage() {
         </button>
 
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Left section */}
+          {/* LEFT SECTION */}
           <div className="flex-1 bg-gray-50 p-6 rounded-xl shadow-sm">
-            {/* Full name & Email */}
+            {/* Full Name & Email */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -92,7 +155,7 @@ export default function CheckoutPage() {
                   placeholder="Your name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-lg px-3 py-2 bg-[#DDDDDD] text-sm"
+                  className="w-full rounded-lg px-3 py-2 bg-[#DDDDDD] text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </div>
 
@@ -105,7 +168,7 @@ export default function CheckoutPage() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg px-3 py-2 bg-[#DDDDDD] text-sm"
+                  className="w-full rounded-lg px-3 py-2 bg-[#DDDDDD] text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </div>
             </div>
@@ -117,7 +180,7 @@ export default function CheckoutPage() {
                 placeholder="Promo code"
                 value={promo}
                 onChange={(e) => setPromo(e.target.value)}
-                className="flex-1 rounded-lg px-3 py-2 bg-[#DDDDDD] text-sm"
+                className="flex-1 rounded-lg px-3 py-2 bg-[#DDDDDD] text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
               <button
                 onClick={handleApplyPromo}
@@ -144,7 +207,6 @@ export default function CheckoutPage() {
               </p>
             )}
 
-            {/* Terms */}
             <div className="flex items-center gap-2 text-sm">
               <input
                 id="agree"
@@ -158,7 +220,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Right section */}
+          {/* RIGHT SECTION */}
           <div className="w-full md:w-1/3 bg-gray-50 p-6 rounded-xl shadow-sm">
             <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
 
@@ -216,14 +278,15 @@ export default function CheckoutPage() {
             </div>
 
             <button
-              disabled={!agreed}
-              className={`w-full mt-4 py-2 rounded-lg font-medium ${
+              onClick={handleBooking}
+              disabled={!agreed || isBooking}
+              className={`w-full mt-4 py-2 rounded-lg font-medium transition ${
                 agreed
                   ? "bg-[#FFD643] hover:bg-yellow-400 text-black"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
-              Pay and Confirm
+              {isBooking ? "Processing..." : "Pay and Confirm"}
             </button>
           </div>
         </div>
