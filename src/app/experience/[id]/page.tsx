@@ -227,11 +227,17 @@ export default function ExperienceDetails() {
                 <button
                   disabled={!isConfirmEnabled}
                   onClick={() =>
-                    alert(
-                      `Booking confirmed for ${selectedDate} at ${selectedTime}`
+                    router.push(
+                      `/checkout?title=${encodeURIComponent(
+                        experience.title
+                      )}&date=${encodeURIComponent(
+                        selectedDate!
+                      )}&time=${encodeURIComponent(selectedTime!)}&price=${
+                        experience.price
+                      }&qty=${quantity}&tax=${tax}`
                     )
                   }
-                  className={`w-full mt-3 py-2.5 rounded-md font-medium transition-all duration-200 ${
+                  className={`mt-4 px-6 py-2.5 rounded-md font-medium transition-all duration-200 ${
                     isConfirmEnabled
                       ? "bg-[#FFD643] hover:bg-[#f5c932] text-gray-900 cursor-pointer"
                       : "bg-[#E5E5E5] text-gray-500 cursor-not-allowed"
