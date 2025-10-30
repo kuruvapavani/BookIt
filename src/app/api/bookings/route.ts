@@ -11,6 +11,7 @@ export async function POST(req: Request) {
 
     const { experienceId, user, slot, quantity, price, total } = body;
 
+    // 🧩 Validate required fields
     if (
       !experienceId ||
       !user?.name ||
@@ -24,12 +25,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Prevent double booking for same date/time by same user
+    // 🚫 Prevent double booking for same date/time by same user
     const existing = await Booking.findOne({
       experienceId,
       "user.email": user.email,
-      "slot.date": slot.date,
-      "slot.time": slot.time,
+      date: slot.date,
+      time: slot.time,
     });
 
     if (existing) {
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create booking
+    // 🧾 Create booking
     const booking = await Booking.create({
       experienceId,
       user,
@@ -50,10 +51,22 @@ export async function POST(req: Request) {
       total,
     });
 
-    // Decrease slot availability
+    // 🔻 Decrease slot count
     await Experience.updateOne(
       { _id: experienceId, "slots.date": slot.date, "slots.time": slot.time },
       { $inc: { "slots.$.left": -quantity } }
+    );
+    // 🚨 If slot becomes 0, mark it unavailable
+    await Experience.updateOne(
+      {
+        _id: experienceId,
+        "slots.date": slot.date,
+        "slots.time": slot.time,
+        "slots.left": { $lte: 0 },
+      },
+      {
+        $set: { "slots.$.available": false, "slots.$.left": 0 },
+      }
     );
 
     return NextResponse.json({ success: true, booking });
