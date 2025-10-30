@@ -113,6 +113,7 @@ export default function ExperienceDetails() {
                     key={date}
                     onClick={() => {
                       setSelectedDate(date);
+                      setQuantity(1);
                       setSelectedTime(null);
                     }}
                     className={`px-3 py-[6px] border rounded-md text-sm font-medium transition-all ${
@@ -136,7 +137,10 @@ export default function ExperienceDetails() {
                     <button
                       key={`${slot.date}-${slot.time}`}
                       disabled={!slot.available || slot.left <= 0}
-                      onClick={() => setSelectedTime(slot.time)}
+                      onClick={() => {
+                        setSelectedTime(slot.time);
+                        setQuantity(1);
+                      }}
                       className={`px-3 py-[6px] border rounded-md text-sm font-medium flex items-center gap-2 transition-all ${
                         !slot.available || slot.left <= 0
                           ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
@@ -195,8 +199,27 @@ export default function ExperienceDetails() {
                     </button>
                     <span>{quantity}</span>
                     <button
+                      disabled={
+                        !selectedDate ||
+                        !selectedTime ||
+                        (() => {
+                          const slot = experience.slots.find(
+                            (s) =>
+                              s.date === selectedDate && s.time === selectedTime
+                          );
+                          return slot ? quantity >= slot.left : false;
+                        })()
+                      }
                       onClick={() => setQuantity((q) => q + 1)}
-                      className="w-7 h-7 border rounded-md flex items-center justify-center hover:bg-gray-100"
+                      className={`w-7 h-7 border rounded-md flex items-center justify-center hover:bg-gray-100 ${(() => {
+                        const slot = experience.slots.find(
+                          (s) =>
+                            s.date === selectedDate && s.time === selectedTime
+                        );
+                        return slot && quantity >= slot.left
+                          ? "opacity-50 cursor-not-allowed"
+                          : "";
+                      })()}`}
                     >
                       +
                     </button>
@@ -234,7 +257,7 @@ export default function ExperienceDetails() {
                       }&tax=${tax}`
                     )
                   }
-                  className={`mt-4 px-6 py-2.5 rounded-md font-medium transition-all duration-200 ${
+                  className={`mt-4 w-full px-6 py-2.5 rounded-md font-medium transition-all duration-200 ${
                     isConfirmEnabled
                       ? "bg-[#FFD643] hover:bg-[#f5c932] text-gray-900 cursor-pointer"
                       : "bg-[#E5E5E5] text-gray-500 cursor-not-allowed"
